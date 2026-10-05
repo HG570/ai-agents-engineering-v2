@@ -27,9 +27,16 @@ CATEGORIAS = ("rh", "ti", "beneficios", "elegibilidade")
 #   - "elegibilidade" é quando a pessoa pergunta se ELA tem direito a algo;
 #   - peça a resposta em minúsculas, sem pontuação.
 # --------------------------------------------------------------------------
-PROMPT_CLASSIFICADOR = """
-(escreva aqui)
-"""
+PROMPT_CLASSIFICADOR = """Você é um classificador de perguntas para suporte interno de colaboradores da Aurora Tecnologia.
+Sua tarefa é classificar a pergunta do colaborador em EXATAMENTE UMA das 4 categorias a seguir:
+
+1. elegibilidade: A pessoa pergunta se ELA (ou o dependente dela) tem direito a algum benefício ou regra ("eu tenho direito?", "posso receber?", "tenho direito ao auxílio...?").
+2. ti: Perguntas sobre equipamentos, notebooks que quebraram ou caíram, senhas, bloqueio de conta, VPN, acesso remoto, suporte técnico de TI.
+3. beneficios: Perguntas sobre regras de benefícios gerais (plano de saúde, inclusão de dependente no plano, vale-refeição, vale-transporte, etc.).
+4. rh: Perguntas sobre trabalho remoto (dias em casa), férias (divisão de períodos), licenças (maternidade/paternidade), conduta, normas gerais de trabalho.
+
+Responda APENAS o nome da categoria em minúsculas, sem pontuação e sem nenhuma outra palavra:
+rh, ti, beneficios ou elegibilidade"""
 
 
 def classificar(pergunta: str) -> str:
@@ -37,9 +44,13 @@ def classificar(pergunta: str) -> str:
                              sistema=PROMPT_CLASSIFICADOR, max_tokens=10)
     categoria = resposta.texto.strip().lower()
 
-    # TODO 1 (continuação): e se o modelo responder algo fora de CATEGORIAS?
-    # Decida um comportamento padrão e devolva sempre uma categoria válida.
-    raise NotImplementedError("TODO 1: trate a resposta do classificador em arquitetura_b.py")
+    # Se vier pontuação ou palavras extras, tenta encontrar uma categoria válida
+    for cat in CATEGORIAS:
+        if cat in categoria:
+            return cat
+
+    # Decisão de comportamento padrão se não identificar: rh
+    return "rh"
 
 
 def resolver(pergunta: str) -> Resultado:
@@ -47,16 +58,20 @@ def resolver(pergunta: str) -> Resultado:
 
     # ----------------------------------------------------------------------
     # TODO 2 — o roteamento
-    #
-    # a) Se a categoria for "elegibilidade", devolva direto:
-    #        Resultado("escalar", [], "texto explicando que o RH vai analisar")
-    #    (repare: esse caminho nem chama o modelo)
-    #
-    # b) Senão, busque os documentos do tema:   docs = buscar(categoria, pergunta)
-    #    Se não vier nenhum documento, devolva Resultado("nao_sei", [], "...").
-    #
-    # c) Monte o prompt de sistema com REGRAS, FORMATO_JSON e os documentos
-    #    (veja como a arquitetura_a.py faz com formatar), chame o modelo
-    #    e devolva Resultado.de_json(resposta.texto).
     # ----------------------------------------------------------------------
-    raise NotImplementedError("TODO 2: escreva o roteamento em arquitetura_b.py")
+    # a) Se a categoria for "elegibilidade", escala direto para o RH
+    if categoria == "elegibilidade":
+        return Resultado("escalar", [], "Análise de elegibilidade deve ser realizada pelo RH.")
+
+    # b) Senão, busca os documentos do tema
+    docs = buscar(categoria, pergunta)
+    if not docs:
+        return Resultado("nao_sei", [], "Nenhum documento encontrado sobre este assunto.")
+
+    # c) Monta o prompt com REGRAS, FORMATO_JSON e os documentos encontrados
+    documentos = "\n\n".join(formatar(doc) for doc in docs)
+    sistema = f"{REGRAS}\n\n{FORMATO_JSON}\n\nDocumentos disponíveis:\n\n{documentos}"
+
+    resposta = modelo.chamar([modelo.mensagem_do_usuario(pergunta)], sistema=sistema)
+    return Resultado.de_json(resposta.texto)
+
