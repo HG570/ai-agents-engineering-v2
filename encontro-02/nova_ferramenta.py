@@ -82,16 +82,39 @@ def normalizar(texto: str) -> str:
 #   4. devolver {"resultados": [...], ...}
 # ======================================================================
 def consultar_rede_credenciada(cidade: str) -> dict:
-    raise NotImplementedError("TODO 4a: implemente consultar_rede_credenciada em nova_ferramenta.py")
+    dados = SHEETS.ler(PLANILHA_ID, ABA)  
+    prestadores = dados["values"][1:]
+    cabecalho = dados["values"][0]
+    
+    prestadores_filtrados = []
+    for prestador in prestadores:
+        if normalizar(prestador[3]) == normalizar(cidade):
+            prestadores_filtrados.append(dict(zip(cabecalho, prestador)))
+    
+    return {"resultados": prestadores_filtrados, "fonte": {"tipo": "planilha", "id": PLANILHA_ID, "aba": ABA}}
+    # raise NotImplementedError("TODO 4a: implemente consultar_rede_credenciada em nova_ferramenta.py")
 
 
 # ======================================================================
 # TODO 4b — o contrato (mesmo formato de contratos.py)
 # ======================================================================
 CONTRATO = {
-    "descricao": "TODO 4",
-    "parametros": None,
-    "saida": None,
+    "descricao": (
+        "Usar para buscar prestadores da rede credenciada"
+        "Não usar para saber se um colaborador específico tem direito ao benefício: isso é"
+        "verificar_elegibilidade_beneficio"
+        "Devolve até 2 páginas, com o id da página (para citar como fonte) e o trecho relevante"
+    ),
+    "parametros": {
+        "type": "object",
+        "properties": {
+            "cidade": {"type": "string", "maxLength": 300,
+                            "description": "A cidade onde o prestador deve estar."},
+        },
+        "required": ["cidade"],
+        "additionalProperties": False,
+    },
+    "saida": ["prestador", "tipo", "especialidades", "cidade", "uf", "bairro", "telefone", "atende_24h", "situacao", "codigo_operadora", "valor_negociado_consulta", "observacao_interna"],
 }
 
 
@@ -101,3 +124,4 @@ NOME = "consultar_rede_credenciada"
 if __name__ == "__main__":   # olhar os dados antes de escrever a ferramenta
     for linha in SHEETS.ler(PLANILHA_ID, ABA)["values"]:
         print(linha)
+

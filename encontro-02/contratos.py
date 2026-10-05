@@ -79,9 +79,25 @@ CONTRATOS = {
     # Sem o id na saída, o agente consegue citar a fonte?
     # ==================================================================
     "consultar_politica_rh": {
-        "descricao": "TODO 1",
-        "parametros": None,
-        "saida": None,
+        "descricao": (
+            "Busca nas políticas de RH da wiki"
+            "Use para responder perguntas sobre políticas de RH, como férias, trabalho remoto, licenças, jornada, integração e geral."
+            "Não use para benefícios, nem para questões de TI"
+            "Devolve até 2 páginas, com o id da página (para citar como fonte) e o trecho relevante"
+            "Se a pergunta não tiver relação com políticas de RH, não use esta ferramenta."
+        ),
+        "parametros": {
+            "type": "object",
+            "properties": {
+                "pergunta": {"type": "string", "maxLength": 300,
+                             "description": "A dúvida do colaborador, em português, com as palavras-chave do problema."},
+                "tema": {"type": "string", "enum": ["ferias", "trabalho_remoto", "licencas", "jornada", "integracao", "geral"],
+                         "description": "O tema da política de RH a ser consultada."},
+            },
+            "required": ["pergunta"],
+            "additionalProperties": False,
+        },
+        "saida": ["id", "titulo", "tema", "dono", "atualizado_em", "trecho", "texto_completo", "caminho", "permissoes", "tags", "revisoes"],
     },
 
     # ==================================================================
@@ -99,9 +115,27 @@ CONTRATOS = {
     # precisa saber do chamado aberto?
     # ==================================================================
     "abrir_chamado_ti": {
-        "descricao": "TODO 2",
-        "parametros": None,
-        "saida": None,
+        "descricao": (
+            "cria um chamado no service desk"
+            "use quando não houver resposta na base de TI"
+            "Não use quando a pergunta for sobre políticas de RH ou benefícios"
+            "Não invente informações, apenas passe as que estiverem disponíveis"
+            "Se não tiver certeza sobre alguma informação, não use esta ferramenta"
+        ),
+        "parametros": {
+            "type": "object",
+            "properties": {
+                "categoria": {"type": "string", "enum": ["equipamento", "acesso", "software", "vpn", "outro"],
+                               "description": "A categoria do chamado."},
+                "descricao": {"type": "string", "maxLength": 300,
+                               "description": "A descrição do chamado."},
+                "urgencia": {"type": "string", "enum": ["baixa", "media", "alta"],
+                             "description": "A urgência do chamado."},
+            },
+            "required": ["categoria", "descricao"],
+            "additionalProperties": False,
+        },
+        "saida": ["id", "status", "categoria", "urgencia", "descricao", "prazo_atendimento", "grupo_resolvedor", "fila_interna", "sla_interno_min", "historico", "chave_idempotencia"],
     },
 
     # ==================================================================
@@ -119,9 +153,27 @@ CONTRATOS = {
     # Em que se diferencia de consultar_regra_beneficio?
     # ==================================================================
     "verificar_elegibilidade_beneficio": {
-        "descricao": "TODO 3",
-        "parametros": None,
-        "saida": None,
+        "descricao": (
+            "Lê o cadastro do colaborador no sistema de RH e faz uma PRÉ-ANÁLISE automática."
+            "Só o RH confirma elegibilidade"
+            "Use para verificar se o colaborador tem direito a um benefício, com base no seu cadastro."
+            "Não use para quando a pergunta for sobre politicas de rh ou ti"
+            "Não invente informações, apenas passe as que estiverem disponíveis"
+            "Se não tiver certeza sobre alguma informação, não use esta ferramenta"
+        ),
+        "parametros": {
+            "type": "object",
+            "properties": {
+                "colaborador_id": {"type": "string", 
+                             "description": "O id do colaborador."},
+                "beneficio": {"type": "string", "enum": ["vale_refeicao", "plano_de_saude", "auxilio_creche"], 
+                             "description": "O benefício a ser verificado."},
+            },
+            "required": ["colaborador_id", "beneficio"],
+            "additionalProperties": False,
+        },
+        "saida": ["colaborador_id", "nome", "cpf", "salario_base", "regime", "admissao", "dependentes",
+                   "beneficios_ativos", "beneficio", "pre_analise", "criterios_verificados", "aviso"],
     },
 }
 
